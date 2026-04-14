@@ -1,0 +1,244 @@
+"""
+Simple pygame dodge survival game.
+Run: python dodge_lecture.py
+"""
+
+from __future__ import annotations
+
+import math
+import random
+from abc import ABC, abstractmethod
+
+import pygame
+
+
+# --- Constants -----------------------------------------------------------------
+
+WIDTH = 640
+HEIGHT = 480
+FPS = 60
+
+PLAYER_WIDTH = 48
+PLAYER_HEIGHT = 16
+PLAYER_SPEED = 280
+PLAYER_MARGIN_BOTTOM = 24
+
+OBSTACLE_MIN_WIDTH = 40
+OBSTACLE_MAX_WIDTH = 100
+OBSTACLE_HEIGHT = 20
+BLOCK_OBSTACLE_SPEED = 180
+
+SPAWN_INTERVAL = 1.2
+
+COLOR_BG = (24, 24, 32)
+COLOR_PLAYER = (120, 200, 255)
+COLOR_BLOCK_OBSTACLE = (200, 80, 80)
+COLOR_TEXT = (230, 230, 235)
+COLOR_HINT = (140, 140, 150)
+
+
+# --- Player --------------------------------------------------------------------
+
+class Player:
+    def __init__(self) -> None:
+        x = (WIDTH - PLAYER_WIDTH) // 2
+        y = HEIGHT - PLAYER_MARGIN_BOTTOM - PLAYER_HEIGHT
+        self.rect = pygame.Rect(x, y, PLAYER_WIDTH, PLAYER_HEIGHT)
+        self.speed = PLAYER_SPEED
+
+    def update(self, keys_pressed: pygame.key.ScancodeWrapper, dt: float) -> None:
+        dx = 0.0
+        if keys_pressed[pygame.K_LEFT] or keys_pressed[pygame.K_a]:
+            dx -= self.speed * dt
+        if keys_pressed[pygame.K_RIGHT] or keys_pressed[pygame.K_d]:
+            dx += self.speed * dt
+        self.rect.x = int(round(self.rect.x + dx))
+        self.rect.clamp_ip(pygame.Rect(0, 0, WIDTH, HEIGHT))
+
+    def draw(self, surface: pygame.Surface) -> None:
+        pygame.draw.rect(surface, COLOR_PLAYER, self.rect, border_radius=4)
+
+# --- Obstacles --------------------------------------------------------------------
+
+
+class Obstacle(ABC):
+    """Contract for every obstacle: move, expose a rect for collision, draw."""
+
+    @abstractmethod
+    def update(self, dt: float) -> None:
+        ...
+
+    @property
+    @abstractmethod
+    def rect(self) -> pygame.Rect:
+        ...
+
+    @abstractmethod
+    def draw(self, surface: pygame.Surface) -> None:
+        ...
+
+    def is_off_screen(self) -> bool:
+        return self.rect.top > HEIGHT
+
+
+class BlockObstacle(Obstacle):
+    """Simple rectangle falling straight down."""
+
+    def __init__(self) -> None:
+        w = random.randint(OBSTACLE_MIN_WIDTH, OBSTACLE_MAX_WIDTH)
+        x = random.randint(0, max(0, WIDTH - w))
+        self._rect = pygame.Rect(x, -OBSTACLE_HEIGHT, w, OBSTACLE_HEIGHT)
+        self._vy = BLOCK_OBSTACLE_SPEED
+
+    @property
+    def rect(self) -> pygame.Rect:
+        return self._rect
+
+    def update(self, dt: float) -> None:
+        self._rect.y = int(round(self._rect.y + self._vy * dt))
+
+    def draw(self, surface: pygame.Surface) -> None:
+        pygame.draw.rect(surface, COLOR_BLOCK_OBSTACLE,
+                         self._rect, border_radius=3)
+
+
+class MyObstacle(Obstacle):
+    """Wobbly obstacle: tweak the class variables below to customize."""
+
+    # ----- Change these to customize appearance and motion -----------------
+    # Color: each value is 0 (dark) .. 255 (bright). Order is (Red, Green, Blue).
+    COLOR = (255, 200, 90)
+
+    # Random width for each spawn (min and max, in pixels).
+    WIDTH_MIN = 44
+    WIDTH_MAX = 88
+
+    # Hit box height (pixels). Collision uses this rectangle even if you draw a circle.
+    HEIGHT = 24
+
+    # Falling speed (pixels per second). Higher = harder to dodge.
+    SPEED_Y = 195
+
+    # Side-to-side motion: peak offset from the spawn column (pixels).
+    WOBBLE_AMPLITUDE = 72
+    # How fast the obstacle sweeps side-to-side (radians per second).
+    WOBBLE_SPEED = 2.2
+
+    # Shape: True = ellipse inside the rect; False = rounded rectangle.
+    USE_ELLIPSE = True
+    # Corner roundness when USE_ELLIPSE is False (0 = sharp corners).
+    CORNER_RADIUS = 10
+    # -------------------------------------------------------------------------
+
+    def __init__(self) -> None:
+        w = random.randint(self.WIDTH_MIN, self.WIDTH_MAX)
+        max_x = max(0, WIDTH - w)
+        self._base_x = float(random.randint(0, max_x))
+        self._rect = pygame.Rect(
+            int(self._base_x), -self.HEIGHT, w, self.HEIGHT)
+        self._phase = random.uniform(0.0, 2.0 * math.pi)
+
+    @property
+    def rect(self) -> pygame.Rect:
+        return self._rect
+
+    def update(self, dt: float) -> None:
+        self._rect.y = int(round(self._rect.y + self.SPEED_Y * dt))
+        self._phase += self.WOBBLE_SPEED * dt
+        offset = self.WOBBLE_AMPLITUDE * math.sin(self._phase)
+        x = int(round(self._base_x + offset))
+        x = max(0, min(x, WIDTH - self._rect.width))
+        self._rect.x = x
+
+    def draw(self, surface: pygame.Surface) -> None:
+        if self.USE_ELLIPSE:
+            pygame.draw.ellipse(surface, self.COLOR, self._rect)
+        else:
+            pygame.draw.rect(
+                surface, self.COLOR, self._rect, border_radius=self.CORNER_RADIUS
+            )
+
+
+OBSTACLE_TYPES: list[type[Obstacle]] = [BlockObstacle, MyObstacle]
+
+
+# --- Game helpers --------------------------------------------------------------
+
+def spawn_random_obstacle() -> Obstacle:
+    cls = random.choice(OBSTACLE_TYPES)
+    return cls()
+
+
+def reset_game() -> tuple[Player, list[Obstacle], float, bool]:
+    return Player(), [], 0.0, False
+
+
+def main() -> None:
+    pygame.init()
+    pygame.display.set_caption("Dodge — PFDA lecture")
+    screen = pygame.display.set_mode((WIDTH, HEIGHT))
+    clock = pygame.time.Clock()
+    font = pygame.font.Font(None, 36)
+    font_small = pygame.font.Font(None, 24)
+
+    player, obstacles, spawn_timer, game_over = reset_game()
+    survival_seconds = 0.0
+
+    running = True
+    while running:
+        dt_ms = clock.tick(FPS)
+        dt = dt_ms / 1000.0
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_r and game_over:
+                player, obstacles, spawn_timer, game_over = reset_game()
+                survival_seconds = 0.0
+
+        keys = pygame.key.get_pressed()
+
+        if not game_over:
+            survival_seconds += dt
+            player.update(keys, dt)
+
+            spawn_timer += dt
+            if spawn_timer >= SPAWN_INTERVAL:
+                spawn_timer = 0.0
+                obstacles.append(spawn_random_obstacle())
+
+            for obs in obstacles:
+                obs.update(dt)
+
+            obstacles = [o for o in obstacles if not o.is_off_screen()]
+
+            for obs in obstacles:
+                if player.rect.colliderect(obs.rect):
+                    game_over = True
+                    break
+
+        screen.fill(COLOR_BG)
+        for obs in obstacles:
+            obs.draw(screen)
+        player.draw(screen)
+
+        score_s = f"Time: {survival_seconds:.1f}s"
+        screen.blit(font.render(score_s, True, COLOR_TEXT), (12, 12))
+
+        if game_over:
+            overlay = font.render(
+                "Game over — press R to restart", True, COLOR_TEXT)
+            screen.blit(overlay, overlay.get_rect(
+                center=(WIDTH // 2, HEIGHT // 2)))
+        else:
+            hint = font_small.render(
+                "Arrows / A-D move   R restarts after game over", True, COLOR_HINT)
+            screen.blit(hint, (12, HEIGHT - 28))
+
+        pygame.display.flip()
+
+    pygame.quit()
+
+
+if __name__ == "__main__":
+    main()
