@@ -29,13 +29,13 @@ Minimal Viable Outcome:
 ## Milestones
 
 - Week 1
-  1. Goal 1
-  2. Goal 2
+  1. Create the basic game loop structure and ability to move.
+  2. Make the music.
 
 - Week 2
-  1. Goal 1
-  2. Goal 2
+  1. Create the enemies and a lose condition.
+  2. Add the screen flash ability.
 
 - Week N (Final)
-  1. Goal 1
-  2. Goal 2
+  1. Implement sprites and music.
+  2. Add sound effects.
