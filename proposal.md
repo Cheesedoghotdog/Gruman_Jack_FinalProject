@@ -4,27 +4,27 @@
 https://github.com/Cheesedoghotdog/Gruman_Jack_FinalProject 
 
 ## Description
-1-2 sentence description of what it will do and how it relevant to media and digital arts.
+This will be an arcade game where the goal is to survive while enemies fly by you. There is a big caveat of being unable to see them! You will have to rely on sounds or an occasional screen flash ability to navigate and stay alive!
 
 ## Features
 - Feature 1
-	- Short explaination of how it will be executed.
+	- Basic 2D movement.
 - Feature 2
-	- Short explaination of how it will be executed.
-- Feature N 
-	- Short explaination of how it will be executed.
+	- Dynamic enemy sounds and music.
+- Feature 3
+	- Ability to flash the screen to see all obstacles.
 
 ## Challenges
-- Short sentence of any skill or topic that needs to be learnt or researched.
-- Short sentence of any skill or topic that needs to be learnt or researched.
-- Short sentence of any skill or topic that needs to be learnt or researched.
+- How to play sounds of different volumes in pygame.
+- Study the dodge test example given to learn how to make movement.
+- Figure out how best to use sprites in pygame.
 
 ## Outcomes
 Ideal Outcome:
-- Briefly describe what is the ideal outcome?
+- All features are implemented alongside workable sprites and music.
 
 Minimal Viable Outcome:
-- Briefly describe the bare essential for a good working outcome?
+- A game with just the ability to move and flash the screen to see the enemies.
 
 ## Milestones
 
