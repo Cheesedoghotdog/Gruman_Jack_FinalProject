@@ -30,7 +30,7 @@ FONT = pygame.font.SysFont("comicsans", 30)
 
 Music = 'quietgame.mp3'
 
-def draw(player, elapsed_time, rocks):
+def draw(player, elapsed_time, rocks, bar):
     WIN.blit(BG, (0, 0))
 
     for rock in rocks:
@@ -40,6 +40,8 @@ def draw(player, elapsed_time, rocks):
 
     time_text = FONT.render(f"Time: {round(elapsed_time)}s", 1, "white")
     WIN.blit(time_text, (10, 10))
+
+    pygame.draw.rect(WIN, "green", bar)
 
     pygame.display.update()
 
@@ -62,6 +64,8 @@ def main():
     rocks = []
     hit = False
 
+    abilitymeter = 100
+
     while run:
         rock_count += clock.tick(60)
         elapsed_time = time.time() - start_time
@@ -72,7 +76,7 @@ def main():
                 rock = pygame.Rect(rock_x, -30, ROCK_WIDTH, ROCK_WIDTH)
                 rocks.append(rock)
             
-            rock_add_increment = max(400, rock_add_increment - 30)
+            rock_add_increment = max(200, rock_add_increment - 40)
             rock_count = 0
 
         for event in pygame.event.get():
@@ -105,7 +109,14 @@ def main():
             pygame.time.delay(4000)
             break
 
-        draw(player, elapsed_time, rocks)
+        bar = pygame.Rect(WIDTH - 120, 20, (abilitymeter), 20)
+        if abilitymeter < 100:
+            abilitymeter += 0.5
+        
+        if keys[pygame.K_SPACE] and abilitymeter >= 100:
+            abilitymeter = 0
+
+        draw(player, elapsed_time, rocks, bar)
 
     
     pygame.quit()
