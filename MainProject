@@ -100,7 +100,7 @@ def main():
                 rock = pygame.Rect(rock_x, -30, ROCK_WIDTH, ROCK_WIDTH)
                 rocks.append(rock)
             
-            rock_add_increment = max(100, rock_add_increment - (rock_add_increment/20))
+            rock_add_increment = max(150, rock_add_increment - (rock_add_increment/20))
             rock_drop = min(2.5, rock_drop + 0.005)
             rock_count = 0
 
