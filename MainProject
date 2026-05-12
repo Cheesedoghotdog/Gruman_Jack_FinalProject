@@ -34,13 +34,17 @@ Music = 'quietgame.mp3'
 
 surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
 
+
+playersurface  = pygame.transform.scale(pygame.image.load("playercar.png"), (PLAYER_WIDTH, PLAYER_HEIGHT))
+enemysurface  = pygame.transform.scale(pygame.image.load("cone.png"), (ROCK_WIDTH, ROCK_WIDTH))
+
 def draw(player, elapsed_time, rocks, bar, alpha):
     WIN.blit(BG, (0, 0))
 
     for rock in rocks:
-        pygame.draw.rect(WIN, "black", rock)
+        WIN.blit(enemysurface, (rock.x, rock.y))
 
-    pygame.draw.rect(WIN, Dark, player)
+    WIN.blit(playersurface, (player.x, player.y))
 
     Dark.set_alpha(alpha)
     WIN.blit(Dark, (0, 0))
