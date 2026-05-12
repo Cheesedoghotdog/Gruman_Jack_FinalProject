@@ -5,6 +5,7 @@ import time
 from abc import ABC, abstractmethod
 
 import pygame
+pygame.init()
 pygame.font.init()
 pygame.mixer.init()
 
@@ -14,23 +15,26 @@ pygame.mixer.init()
 WIDTH = 640
 HEIGHT = 480
 
-WIN = pygame.display.set_mode((WIDTH, HEIGHT))
+WIN = pygame.display.set_mode((WIDTH, HEIGHT), pygame.SRCALPHA)
 pygame.display.set_caption("Blind Faith")
 
 BG = pygame.transform.scale(pygame.image.load("background.png"), (WIDTH, HEIGHT))
+Dark = pygame.transform.scale(pygame.image.load("dark.png").convert_alpha(), (WIDTH, HEIGHT))
 
 PLAYER_WIDTH = 42
 PLAYER_HEIGHT = 48
 PLAYER_VELOCITY = 2
 
 ROCK_WIDTH = 16
-ROCK_VELOCITY = 2
+ROCK_VELOCITY = 1.5
 
 FONT = pygame.font.SysFont("comicsans", 30)
 
 Music = 'quietgame.mp3'
 
-def draw(player, elapsed_time, rocks, bar):
+surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+
+def draw(player, elapsed_time, rocks, bar, alpha):
     WIN.blit(BG, (0, 0))
 
     for rock in rocks:
@@ -38,16 +42,22 @@ def draw(player, elapsed_time, rocks, bar):
 
     pygame.draw.rect(WIN, "red", player)
 
+    Dark.set_alpha(alpha)
+    WIN.blit(Dark, (0, 0))
+
     time_text = FONT.render(f"Time: {round(elapsed_time)}s", 1, "white")
     WIN.blit(time_text, (10, 10))
 
     pygame.draw.rect(WIN, "green", bar)
 
     pygame.display.update()
+    
 
 def main():
     pygame.mixer.music.load(Music)
     pygame.mixer.music.play(-1)
+    flashlight = pygame.mixer.Sound('Flashlight.wav')
+    flashlight.set_volume(0.2)
 
     run = True
 
@@ -59,12 +69,20 @@ def main():
     elapsed_time = 0
 
     rock_add_increment = 3000
-    rock_count = 0
+    rock_count = 3000
 
     rocks = []
     hit = False
 
+    alpha = 255
+
     abilitymeter = 100
+    abilitygain = True
+    countdown = 0
+    pygame.mixer.music.set_volume(0.15)
+    volume = 0.15
+
+    rock_drop = ROCK_VELOCITY
 
     while run:
         rock_count += clock.tick(60)
@@ -76,7 +94,8 @@ def main():
                 rock = pygame.Rect(rock_x, -30, ROCK_WIDTH, ROCK_WIDTH)
                 rocks.append(rock)
             
-            rock_add_increment = max(200, rock_add_increment - 40)
+            rock_add_increment = max(100, rock_add_increment - (rock_add_increment/20))
+            rock_drop = min(2.5, rock_drop + 0.005)
             rock_count = 0
 
         for event in pygame.event.get():
@@ -93,7 +112,7 @@ def main():
             player.x += PLAYER_VELOCITY
         
         for rock in rocks[:]:
-            rock.y += ROCK_VELOCITY
+            rock.y += rock_drop
             if rock.y > HEIGHT:
                 rocks.remove(rock)
             elif rock.y + rock.height >= player.y and rock.colliderect(player):
@@ -110,13 +129,26 @@ def main():
             break
 
         bar = pygame.Rect(WIDTH - 120, 20, (abilitymeter), 20)
-        if abilitymeter < 100:
-            abilitymeter += 0.5
+        if abilitymeter < 100 and abilitygain == True:
+            abilitymeter += 0.4
+            alpha += 4
+            if (volume >= 0.15):
+                volume -= 0.005
         
-        if keys[pygame.K_SPACE] and abilitymeter >= 100:
-            abilitymeter = 0
+        if keys[pygame.K_SPACE] and abilitymeter >= 50 and abilitygain == True:
+            abilitymeter -= 50
+            abilitygain = False
+            alpha = 0
+            countdown = time.time()
+            volume = 0.8
+            flashlight.play()
 
-        draw(player, elapsed_time, rocks, bar)
+        if countdown <= time.time() - 1:
+            abilitygain = True
+        
+        pygame.mixer.music.set_volume(volume)
+
+        draw(player, elapsed_time, rocks, bar, alpha)
 
     
     pygame.quit()
